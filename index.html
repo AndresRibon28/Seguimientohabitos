@@ -660,9 +660,14 @@
                         <div class="reward-points">${reward.cost} pts</div>
                     </div>
                     <p>Canjea esta recompensa cuando alcances los puntos necesarios</p>
-                    <button class="btn btn-primary" onclick="redeemReward(${reward.id})">
-                        <i class="fas fa-shopping-cart"></i> Canjear
-                    </button>
+                    <div>
+                        <button class="btn btn-primary" onclick="redeemReward(${reward.id})">
+                            <i class="fas fa-shopping-cart"></i> Canjear
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteReward(${reward.id})" style="margin-left:8px;">
+                            <i class="fas fa-trash"></i> Eliminar
+                        </button>
+                    </div>
                 `;
                 
                 rewardsList.appendChild(rewardElement);
@@ -757,6 +762,15 @@
                 renderHabits();
                 renderTodayHabits();
                 updateDashboard();
+            }
+        }
+
+        // Eliminar recompensa
+        function deleteReward(rewardId) {
+            if (confirm('¿Estás seguro de que quieres eliminar esta recompensa?')) {
+                userData.rewards = userData.rewards.filter(r => r.id !== rewardId);
+                saveUserData();
+                renderRewards();
             }
         }
 
