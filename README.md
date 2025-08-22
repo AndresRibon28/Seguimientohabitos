@@ -1,2 +1,2 @@
-# Seguimientohabitos
+# Seguimiento habitos
 Control de habitos
