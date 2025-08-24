@@ -303,7 +303,60 @@
             }
         }
 
-        /* Estilos para el modal de edición */
+        /* Mejoras para móviles */
+@media (max-width: 600px) {
+    .container {
+        padding: 8px;
+    }
+    .card {
+        padding: 12px;
+        margin-bottom: 12px;
+        border-radius: 8px;
+    }
+    .card-title {
+        font-size: 1.2rem;
+        gap: 6px;
+    }
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    .habits-grid, .rewards-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    .btn {
+        padding: 14px 0;
+        font-size: 1.1rem;
+        width: 100%;
+        margin-bottom: 8px;
+    }
+    .form-control {
+        padding: 10px;
+        font-size: 1rem;
+    }
+    .points-display {
+        font-size: 1.2rem;
+        margin: 10px 0;
+    }
+    .nav-tabs {
+        flex-direction: column;
+        gap: 0;
+    }
+    .nav-tabs li {
+        width: 100%;
+        margin-bottom: 6px;
+        text-align: center;
+        font-size: 1rem;
+    }
+    #edit-habit-modal .modal-content,
+    #edit-reward-modal .modal-content {
+        max-width: 95vw;
+        padding: 18px;
+    }
+}
+
+/* Estilos para el modal de edición */
         #edit-habit-modal {
             display: none;
             position: fixed;
@@ -696,20 +749,22 @@
         function completeHabit(habitId) {
             const habit = userData.habits.find(h => h.id === habitId);
             if (!habit) return;
-            
+
             // Registrar completado
             userData.completions.push({
                 habitId,
                 date: new Date().toISOString()
             });
-            
+
             // Sumar puntos
             userData.points += habit.points;
-            
+
             saveUserData();
             updateUI();
-            renderTodayHabits();
             updateDashboard();
+            renderHabits();
+            renderRewards();
+            renderTodayHabits();
         }
 
         // Canjear recompensa
@@ -875,7 +930,7 @@
         // Actualizar dashboard
         function updateDashboard() {
             // Actualizar estadísticas
-            document.getElementById('completed-habits').textContent = userData.completions.length;
+            // document.getElementById('completed-habits').textContent = userData.completions.length; // <-- Elimina o comenta esta línea
 
     const earnedPoints = userData.completions.reduce((total, completion) => {
         const habit = userData.habits.find(h => h.id === completion.habitId);
@@ -1102,5 +1157,3 @@ document.getElementById('edit-reward-form').addEventListener('submit', function(
 </script>
 </body>
 </html>
-
-
