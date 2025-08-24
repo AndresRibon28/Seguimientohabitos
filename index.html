@@ -124,7 +124,7 @@
 
         .btn-success {
             background-color: var(--success);
-            color: var(--dark);
+            color: var,--dark;
         }
 
         .btn-success:hover {
@@ -302,6 +302,60 @@
                 flex-wrap: wrap;
             }
         }
+
+        /* Estilos para el modal de edición */
+        #edit-habit-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #edit-habit-modal .modal-content {
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 400px;
+            margin: auto;
+        }
+
+        #edit-habit-modal h3 {
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+
+        /* Estilos para el modal de edición de recompensas */
+        #edit-reward-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #edit-reward-modal .modal-content {
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 400px;
+            margin: auto;
+        }
+
+        #edit-reward-modal h3 {
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
     </style>
 </head>
 <body>
@@ -333,8 +387,8 @@
                 
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <div class="stat-label">Hábitos Completados</div>
-                        <div class="stat-value" id="completed-habits">0</div>
+                        <div class="stat-label">Cumplimiento Diario</div>
+                        <div class="stat-value" id="daily-completion">0%</div>
                     </div>
                     
                     <div class="stat-card">
@@ -393,6 +447,7 @@
                             <option value="daily">Diario</option>
                             <option value="weekly">Semanal</option>
                             <option value="monthly">Mensual</option>
+                            <option value="none">Sin periodicidad</option>
                         </select>
                     </div>
                     
@@ -437,6 +492,55 @@
                 </div>
             </div>
         </div>
+
+        <!-- Modal para editar hábito -->
+        <div id="edit-habit-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.3); z-index:1000; align-items:center; justify-content:center;">
+            <div style="background:#fff; padding:30px; border-radius:12px; max-width:400px; margin:auto;">
+                <h3>Editar Hábito</h3>
+                <form id="edit-habit-form">
+                    <input type="hidden" id="edit-habit-id">
+                    <div class="form-group">
+                        <label for="edit-habit-name">Nombre</label>
+                        <input type="text" id="edit-habit-name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-habit-points">Puntos</label>
+                        <input type="number" id="edit-habit-points" class="form-control" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-habit-frequency">Frecuencia</label>
+                        <select id="edit-habit-frequency" class="form-control">
+                            <option value="daily">Diario</option>
+                            <option value="weekly">Semanal</option>
+                            <option value="monthly">Mensual</option>
+                            <option value="none">Sin periodicidad</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                    <button type="button" class="btn btn-danger" onclick="closeEditHabitModal()">Cancelar</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal para editar recompensa -->
+        <div id="edit-reward-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.3); z-index:1000; align-items:center; justify-content:center;">
+            <div style="background:#fff; padding:30px; border-radius:12px; max-width:400px; margin:auto;">
+                <h3>Editar Recompensa</h3>
+                <form id="edit-reward-form">
+                    <input type="hidden" id="edit-reward-id">
+                    <div class="form-group">
+                        <label for="edit-reward-name">Nombre</label>
+                        <input type="text" id="edit-reward-name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-reward-cost">Costo en puntos</label>
+                        <input type="number" id="edit-reward-cost" class="form-control" min="1" required>
+                    </div>
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                    <button type="button" class="btn btn-danger" onclick="closeEditRewardModal()">Cancelar</button>
+                </form>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -457,6 +561,8 @@
         const todayHabits = document.getElementById('today-habits');
         const addHabitForm = document.getElementById('add-habit-form');
         const addRewardForm = document.getElementById('add-reward-form');
+        const editHabitModal = document.getElementById('edit-habit-modal');
+        const editHabitForm = document.getElementById('edit-habit-form');
 
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
@@ -474,6 +580,10 @@
                     userData.points = 0;
                     saveUserData();
                     updateUI();
+                    updateDashboard();
+                    renderHabits();
+                    renderRewards();
+                    renderTodayHabits();
                 }
             });
 
@@ -481,9 +591,12 @@
             document.getElementById('reset-performance-btn').addEventListener('click', function() {
                 if (confirm('¿Seguro que quieres reiniciar el desempeño? Esto borrará todas las completaciones.')) {
                     userData.completions = [];
+                    userData.lastStreakRewardDate = null; // Reinicia la racha especial
                     saveUserData();
+                    updateUI();
                     updateDashboard();
                     renderHabits();
+                    renderRewards();
                     renderTodayHabits();
                 }
             });
@@ -502,6 +615,7 @@
             // Formularios
             addHabitForm.addEventListener('submit', handleAddHabit);
             addRewardForm.addEventListener('submit', handleAddReward);
+            editHabitForm.addEventListener('submit', handleEditHabit);
         }
 
         // Cambiar de pestaña
@@ -556,6 +670,28 @@
             addRewardForm.reset();
         }
 
+        // Manejar editar hábito
+        function handleEditHabit(e) {
+            e.preventDefault();
+            
+            const id = parseInt(document.getElementById('edit-habit-id').value);
+            const name = document.getElementById('edit-habit-name').value;
+            const points = parseInt(document.getElementById('edit-habit-points').value);
+            const frequency = document.getElementById('edit-habit-frequency').value;
+            
+            const habit = userData.habits.find(h => h.id === id);
+            if (habit) {
+                habit.name = name;
+                habit.points = points;
+                habit.frequency = frequency;
+                saveUserData();
+                renderHabits();
+                renderTodayHabits();
+                updateDashboard();
+            }
+            closeEditHabitModal();
+        }
+
         // Completar hábito
         function completeHabit(habitId) {
             const habit = userData.habits.find(h => h.id === habitId);
@@ -580,15 +716,25 @@
         function redeemReward(rewardId) {
             const reward = userData.rewards.find(r => r.id === rewardId);
             if (!reward) return;
-            
+
             if (userData.points >= reward.cost) {
                 userData.points -= reward.cost;
                 alert(`¡Felicidades! Has canjeado: ${reward.name}`);
-                
                 saveUserData();
                 updateUI();
             } else {
-                alert('No tienes suficientes puntos para canjear esta recompensa');
+                // Permitir préstamo solo si el saldo negativo no supera -50
+                const posibleNuevoSaldo = userData.points - reward.cost;
+                if (posibleNuevoSaldo >= -50) {
+                    if (confirm('No tienes suficientes puntos. ¿Quieres tomar un préstamo y quedar en negativo (máx. -50 puntos)?')) {
+                        userData.points = posibleNuevoSaldo;
+                        alert(`Has tomado un préstamo para canjear: ${reward.name}. ¡Recuerda pagar con tus hábitos!`);
+                        saveUserData();
+                        updateUI();
+                    }
+                } else {
+                    alert('No puedes tomar más préstamo. El saldo negativo máximo es -50 puntos.');
+                }
             }
         }
 
@@ -629,6 +775,9 @@
                         <button class="btn btn-danger" onclick="deleteHabit(${habit.id})">
                             <i class="fas fa-trash"></i> Eliminar
                         </button>
+                        <button class="btn btn-warning" onclick="showEditHabit(${habit.id})">
+    <i class="fas fa-edit"></i> Editar
+</button>
                     </div>
                 `;
                 
@@ -667,6 +816,9 @@
                         <button class="btn btn-danger" onclick="deleteReward(${reward.id})" style="margin-left:8px;">
                             <i class="fas fa-trash"></i> Eliminar
                         </button>
+                        <button class="btn btn-warning" onclick="showEditReward(${reward.id})" style="margin-left:8px;">
+    <i class="fas fa-edit"></i> Editar
+</button>
                     </div>
                 `;
                 
@@ -724,33 +876,68 @@
         function updateDashboard() {
             // Actualizar estadísticas
             document.getElementById('completed-habits').textContent = userData.completions.length;
-            
-            const earnedPoints = userData.completions.reduce((total, completion) => {
-                const habit = userData.habits.find(h => h.id === completion.habitId);
-                return total + (habit ? habit.points : 0);
-            }, 0);
-            
-            document.getElementById('earned-points').textContent = earnedPoints;
-            
-            // Calcular racha actual (simplificado)
-            let currentStreak = 0;
-            const today = new Date();
-            const yesterday = new Date(today);
-            yesterday.setDate(yesterday.getDate() - 1);
-            
-            const hasTodayCompletion = userData.completions.some(c => {
-                const date = new Date(c.date);
-                return date.toDateString() === today.toDateString();
-            });
-            
-            const hasYesterdayCompletion = userData.completions.some(c => {
-                const date = new Date(c.date);
-                return date.toDateString() === yesterday.toDateString();
-            });
-            
-            if (hasTodayCompletion) currentStreak = hasYesterdayCompletion ? 2 : 1;
-            
-            document.getElementById('current-streak').textContent = currentStreak;
+
+    const earnedPoints = userData.completions.reduce((total, completion) => {
+        const habit = userData.habits.find(h => h.id === completion.habitId);
+        return total + (habit ? habit.points : 0);
+    }, 0);
+
+    document.getElementById('earned-points').textContent = earnedPoints;
+
+    // Calcular racha actual (nuevo método)
+    let currentStreak = 0;
+    let streakDays = 0;
+    const today = new Date();
+
+    // Buscar los últimos 7 días
+    for (let i = 0; i < 7; i++) {
+        const date = new Date(today);
+        date.setDate(today.getDate() - i);
+        const dateStr = date.toDateString();
+
+        // Hábitos diarios activos ese día
+        const dailyHabits = userData.habits.filter(h => h.frequency === 'daily');
+        if (dailyHabits.length === 0) break;
+
+        // Completados ese día
+        const completadosHoy = userData.completions.filter(c => {
+            const completionDate = new Date(c.date).toDateString();
+            return completionDate === dateStr && dailyHabits.some(h => h.id === c.habitId);
+        });
+
+        // Si se completaron todos los diarios ese día, suma a la racha
+        if (completadosHoy.length === dailyHabits.length) {
+            streakDays++;
+        } else {
+            break; // Se rompe la racha
+        }
+    }
+    currentStreak = streakDays;
+    document.getElementById('current-streak').textContent = currentStreak;
+
+    // Si se completan 7 días seguidos, dar recompensa extra
+    if (currentStreak === 7 && !userData.lastStreakRewardDate) {
+        userData.points += 100;
+        userData.lastStreakRewardDate = today.toDateString();
+        saveUserData();
+        updateUI();
+        alert('¡Felicidades! Has completado una racha de 7 días y recibes 100 puntos extra.');
+    }
+    // Permitir nueva recompensa solo si la fecha cambia
+    if (currentStreak < 7) {
+        userData.lastStreakRewardDate = null;
+        saveUserData();
+    }
+
+    // Calcular porcentaje de hábitos diarios completados hoy
+    const todayStr = new Date().toDateString();
+const dailyHabits = userData.habits.filter(h => h.frequency === 'daily');
+const completedToday = userData.completions.filter(c => {
+    const completionDate = new Date(c.date).toDateString();
+    return completionDate === todayStr && dailyHabits.some(h => h.id === c.habitId);
+}).length;
+const percent = dailyHabits.length > 0 ? Math.round((completedToday / dailyHabits.length) * 100) : 0;
+document.getElementById('daily-completion').textContent = percent + '%';
         }
 
         // Eliminar hábito
@@ -779,7 +966,8 @@
             const frequencies = {
                 'daily': 'Diario',
                 'weekly': 'Semanal',
-                'monthly': 'Mensual'
+                'monthly': 'Mensual',
+                'none': 'Sin periodicidad'
             };
             return frequencies[frequency] || frequency;
         }
@@ -834,6 +1022,69 @@
                 });
             });
         }
+
+        // Mostrar modal de edición
+        function showEditHabit(habitId) {
+            const habit = userData.habits.find(h => h.id === habitId);
+            if (!habit) return;
+            document.getElementById('edit-habit-id').value = habit.id;
+            document.getElementById('edit-habit-name').value = habit.name;
+            document.getElementById('edit-habit-points').value = habit.points;
+            document.getElementById('edit-habit-frequency').value = habit.frequency;
+            document.getElementById('edit-habit-modal').style.display = 'flex';
+}
+
+function closeEditHabitModal() {
+    document.getElementById('edit-habit-modal').style.display = 'none';
+}
+
+document.getElementById('edit-habit-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const id = parseInt(document.getElementById('edit-habit-id').value);
+    const name = document.getElementById('edit-habit-name').value;
+    const points = parseInt(document.getElementById('edit-habit-points').value);
+    const frequency = document.getElementById('edit-habit-frequency').value;
+    const habit = userData.habits.find(h => h.id === id);
+    if (habit) {
+        habit.name = name;
+        habit.points = points;
+        habit.frequency = frequency;
+        saveUserData();
+        renderHabits();
+        renderTodayHabits();
+        updateDashboard();
+    }
+    closeEditHabitModal();
+});
+
+// Mostrar modal de edición de recompensa
+function showEditReward(rewardId) {
+    const reward = userData.rewards.find(r => r.id === rewardId);
+    if (!reward) return;
+    document.getElementById('edit-reward-id').value = reward.id;
+    document.getElementById('edit-reward-name').value = reward.name;
+    document.getElementById('edit-reward-cost').value = reward.cost;
+    document.getElementById('edit-reward-modal').style.display = 'flex';
+}
+
+function closeEditRewardModal() {
+    document.getElementById('edit-reward-modal').style.display = 'none';
+}
+
+document.getElementById('edit-reward-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const id = parseInt(document.getElementById('edit-reward-id').value);
+    const name = document.getElementById('edit-reward-name').value;
+    const cost = parseInt(document.getElementById('edit-reward-cost').value);
+    const reward = userData.rewards.find(r => r.id === id);
+    if (reward) {
+        reward.name = name;
+        reward.cost = cost;
+        saveUserData();
+        renderRewards();
+    }
+    closeEditRewardModal();
+});
     </script>
     <script>
   // Registrar el Service Worker
@@ -851,4 +1102,5 @@
 </script>
 </body>
 </html>
+
 
